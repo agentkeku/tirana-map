@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Map {
+  id            Int      @id @default(autoincrement())
+  title         String
+  description   String
+  price         Int      // in cents (e.g., 400 = €4.00)
+  sampleSpots   Int      @default(10)
+  fullSpots     Int      @default(37)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchases     Purchase[]
+  reviews       Review[]
+  categories    MapCategory[]
+  spots         MapSpot[]
+}
+
+model MapSpot {
+  id          Int     @id @default(autoincrement())
+  mapId       Int
+  name        String
+  description String
+  category    String
+  latitude    Float
+  longitude   Float
+  localTip    String?
+  isInSample  Boolean @default(false)
+
+  map         Map     @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  @@index([mapId])
+}
+
+model MapCategory {
+  id        Int     @id @default(autoincrement())
+  mapId     Int
+  name      String
+  color     String  @default("#C8583A")
+  icon      String?
+
+  map       Map     @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  @@index([mapId])
+}
+
+model Purchase {
+  id                Int      @id @default(autoincrement())
+  email             String   @db.VarChar(255)
+  firstName         String
+  lastName          String
+  mapId             Int
+  stripePaymentId   String   @unique
+  amount            Int      // in cents
+  status            String   @default("completed") // completed, failed, refunded
+  downloadToken     String   @unique
+  downloadCount     Int      @default(0)
+  downloadedAt      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  map               Map      @relation(fields: [mapId], references: [id])
+  reviews           Review[]
+  @@index([email])
+  @@index([mapId])
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  email       String   @db.VarChar(255)
+  firstName   String
+  mapId       Int
+  purchaseId  Int
+  rating      Int      // 1-5
+  text        String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime @default(now())
+  approvedAt  DateTime?
+  moderatedBy String?
+
+  map         Map      @relation(fields: [mapId], references: [id])
+  purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  @@index([email])
+  @@index([mapId])
+  @@index([status])
+}
