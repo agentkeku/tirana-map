@@ -1,8 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+@theme {
+  --color-terracotta: #C8583A;
+  --color-terracotta-light: #E8987E;
+  --color-terracotta-pale: #F7EDE8;
+  --color-ink: #1A1410;
+  --color-ink-mid: #4A3F38;
+  --color-ink-soft: #8A7E78;
+  --color-cream: #FAF7F2;
+  --color-cream-dark: #F0EBE2;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'DM Sans', sans-serif;
+}
 
 * {
   margin: 0;
@@ -25,4 +35,3 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Playfair Display', serif;
   font-weight: 400;
 }
-

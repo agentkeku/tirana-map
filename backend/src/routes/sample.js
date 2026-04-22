@@ -91,4 +91,57 @@ router.get('/sample-map', async (req, res) => {
   }
 });
 
+// GET /api/map — all spots; sample spots have full data, locked spots have only position + category
+router.get('/map', async (req, res) => {
+  try {
+    const map = await prisma.map.findFirst({
+      where: { title: 'Tirana Insider' },
+      include: { categories: true },
+    });
+
+    if (!map) {
+      return res.status(404).json({ error: 'Map not found' });
+    }
+
+    const allSpots = await prisma.mapSpot.findMany({ where: { mapId: map.id } });
+
+    const spots = allSpots.map((spot) => {
+      if (spot.isInSample) {
+        return {
+          id: spot.id,
+          name: spot.name,
+          description: spot.description,
+          category: spot.category,
+          latitude: spot.latitude,
+          longitude: spot.longitude,
+          localTip: spot.localTip,
+          locked: false,
+        };
+      }
+      return {
+        id: spot.id,
+        category: spot.category,
+        latitude: spot.latitude,
+        longitude: spot.longitude,
+        locked: true,
+      };
+    });
+
+    res.json({
+      map: {
+        title: map.title,
+        description: map.description,
+        price: map.price,
+        sampleSpots: map.sampleSpots,
+        fullSpots: map.fullSpots,
+      },
+      categories: map.categories,
+      spots,
+    });
+  } catch (error) {
+    console.error('Error in /map:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
