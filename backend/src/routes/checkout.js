@@ -5,7 +5,7 @@ import { sendPurchaseReceiptEmail } from '../services/email.js';
 import { generateDownloadToken, generateMapJSON } from '../utils/helpers.js';
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // POST /api/checkout
 router.post('/checkout', async (req, res) => {
@@ -26,6 +26,7 @@ router.post('/checkout', async (req, res) => {
     }
 
     // Create Stripe checkout session
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -68,6 +69,7 @@ router.post('/checkout-webhook', express.raw({ type: 'application/json' }), asyn
   const sig = req.headers['stripe-signature'];
 
   try {
+    const stripe = getStripe();
     const event = stripe.webhooks.constructEvent(
       req.body,
       sig,
