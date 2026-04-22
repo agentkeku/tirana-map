@@ -32,7 +32,7 @@ app.use('/api/admin', adminRoutes);
 // Serve built React frontend in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(FRONTEND_DIST));
-  app.get('*', (req, res) => {
+  app.get('/*path', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
   });
 } else {
