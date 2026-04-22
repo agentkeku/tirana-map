@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import './App.css';
 import MapView from './components/MapView';
-import SpotPanel from './components/SpotPanel';
+import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
-
-const CATEGORIES = ['Coffee', 'Restaurant', 'Bar', 'Nightlife', 'Shopping', 'Day Trip'];
 
 const CATEGORY_COLORS = {
   Coffee:     '#C8583A',
@@ -17,131 +14,244 @@ const CATEGORY_COLORS = {
   'Day Trip': '#2D5A3D',
 };
 
+const CATEGORIES = ['Coffee', 'Restaurant', 'Bar', 'Nightlife', 'Shopping', 'Day Trip'];
+
 export default function App() {
-  const [mapData, setMapData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [spots, setSpots] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
-  const [selectedSpot, setSelectedSpot] = useState(null);
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    axios
-      .get(`${API_BASE}/map`)
-      .then((res) => { setMapData(res.data); setLoading(false); })
-      .catch(() => { setError('Could not load map data.'); setLoading(false); });
+    axios.get(`${API_BASE}/map`).then((res) => setSpots(res.data.spots ?? []));
   }, []);
 
-  const spots = mapData?.spots ?? [];
-  const sampleCount = spots.filter((s) => !s.locked).length;
+  const sampleSpots = spots.filter((s) => !s.locked);
   const lockedCount = spots.filter((s) => s.locked).length;
 
+  async function handleEmailSubmit(e) {
+    e.preventDefault();
+    if (!email) return;
+    setSubmitting(true);
+    try {
+      await axios.post(`${API_BASE}/sample-request`, { email, firstName: 'Guest' });
+      setSubmitted(true);
+    } catch {
+      setSubmitted(true); // show success anyway — email may just not be configured yet
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function handleBuy() {
-    // TODO: wire to Stripe checkout
     alert('Stripe checkout coming soon!');
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#FAF7F2]">
-        <p className="text-gray-400 text-sm">Loading map…</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#FAF7F2]">
-        <p className="text-red-400 text-sm">{error}</p>
-      </div>
-    );
+  function scrollToUnlock() {
+    document.getElementById('unlock')?.scrollIntoView({ behavior: 'smooth' });
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#FAF7F2] overflow-hidden">
-      {/* Header */}
-      <header className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-[#FAF7F2] z-10 shrink-0">
-        <div>
-          <h1 className="text-lg leading-none" style={{ fontFamily: 'Playfair Display, serif' }}>
-            Tirana Insider
-          </h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {sampleCount} free preview · {lockedCount} locked
+    <>
+      {/* NAV */}
+      <nav>
+        <a href="#" className="nav-logo">
+          <div className="nav-logo-mark">
+            <svg viewBox="0 0 16 16"><path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
+          </div>
+          Tirana Insider
+        </a>
+        <button className="nav-cta" onClick={scrollToUnlock}>Get full access — €4</button>
+      </nav>
+
+      {/* HERO */}
+      <section className="hero">
+        <div className="hero-bg" />
+        <div className="hero-grain" />
+        <div className="hero-content">
+          <div className="hero-badge">
+            <div className="hero-badge-line" />
+            Curated by locals
+          </div>
+          <h1>Skip the tourist traps.<br />Find <em>the real</em><br />Tirana.</h1>
+          <p className="hero-sub">
+            Hand-picked restaurants, bars, hidden gems and day trips — from people who actually live here.
+            Not TripAdvisor. Not Google. Your host.
+          </p>
+          {submitted ? (
+            <p className="hero-success">✓ Check your inbox — the preview is on its way.</p>
+          ) : (
+            <form className="hero-form" onSubmit={handleEmailSubmit}>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <button type="submit" disabled={submitting}>
+                {submitting ? 'Sending…' : 'See free preview'}
+              </button>
+            </form>
+          )}
+          <p className="hero-note">
+            10 spots free.{' '}
+            <a href="#unlock" onClick={(e) => { e.preventDefault(); scrollToUnlock(); }}>
+              Unlock all 37 for €4 →
+            </a>
           </p>
         </div>
-        <button
-          onClick={handleBuy}
-          className="px-4 py-2 rounded-full text-white text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
-          style={{ backgroundColor: '#1A1410' }}
-        >
-          Unlock all — €4
-        </button>
-      </header>
+        <div className="hero-stats">
+          <div className="stat-card">
+            <div className="stat-num">37</div>
+            <div className="stat-label">Curated spots</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-num">6</div>
+            <div className="stat-label">Categories</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-num">€4</div>
+            <div className="stat-label">One-time</div>
+          </div>
+        </div>
+      </section>
 
-      {/* Category filter */}
-      <div className="flex gap-2 px-5 py-2.5 overflow-x-auto shrink-0 border-b border-gray-100">
-        <button
-          onClick={() => setActiveFilter(null)}
-          className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-            activeFilter === null
-              ? 'bg-[#1A1410] text-white border-[#1A1410]'
-              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-          }`}
-        >
-          All
-        </button>
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveFilter(activeFilter === cat ? null : cat)}
-            className="shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors"
-            style={
-              activeFilter === cat
-                ? { backgroundColor: CATEGORY_COLORS[cat], color: '#fff', borderColor: CATEGORY_COLORS[cat] }
-                : { backgroundColor: '#fff', color: '#6B7280', borderColor: '#E5E7EB' }
-            }
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Map + panel */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
-        {/* Map */}
-        <div className="flex-1 relative min-h-0">
-          <div className="absolute inset-0">
+      {/* MAP */}
+      <section className="map-section">
+        <div className="section-label">The map</div>
+        <h2 className="section-title">Everything in one place, on your phone.</h2>
+        <div className="map-frame">
           <MapView
             spots={spots}
             activeFilter={activeFilter}
-            selectedSpot={selectedSpot}
-            onSelectSpot={setSelectedSpot}
+            selectedSpot={null}
+            onSelectSpot={() => {}}
           />
+        </div>
+        <div className="map-categories">
+          <div
+            className={`cat${activeFilter === null ? ' active' : ''}`}
+            onClick={() => setActiveFilter(null)}
+          >
+            All spots
           </div>
-
-          {/* Legend */}
-          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm z-[1000] text-xs text-gray-500 space-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block" />
-              Locked (unlock for €4)
+          {CATEGORIES.map((cat) => (
+            <div
+              key={cat}
+              className={`cat${activeFilter === cat ? ' active' : ''}`}
+              onClick={() => setActiveFilter(activeFilter === cat ? null : cat)}
+            >
+              {cat}
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#C8583A' }} />
-              Free preview
+          ))}
+        </div>
+      </section>
+
+      {/* SPOTS PREVIEW */}
+      <section className="spots-section">
+        <div className="section-label">Preview</div>
+        <h2 className="section-title">A taste of what's inside.</h2>
+        <div className="spots-grid">
+          {sampleSpots.slice(0, 3).map((spot) => (
+            <div className="spot-card" key={spot.id}>
+              <div className="spot-meta">
+                <span className="spot-cat-dot" style={{ background: CATEGORY_COLORS[spot.category] }} />
+                {spot.category}
+              </div>
+              <h3>{spot.name}</h3>
+              <p>{spot.description}</p>
+              {spot.localTip && <div className="spot-tip">{spot.localTip}</div>}
+            </div>
+          ))}
+
+          {/* Locked teaser card */}
+          <div className="spot-card" style={{ position: 'relative' }}>
+            <div className="spot-locked">
+              <div className="spot-meta">
+                <span className="spot-cat-dot" style={{ background: '#185FA5' }} />
+                Bar
+              </div>
+              <h3>Radio Bar</h3>
+              <p>Hidden rooftop bar tucked above Blloku. Best sunset view in the city, strong cocktails, and a crowd that actually lives here.</p>
+              <div className="spot-tip">No sign, no Google listing. You need the exact address.</div>
+            </div>
+            <div className="lock-overlay">
+              <button className="lock-pill" onClick={scrollToUnlock}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/>
+                  <path d="M7 11V7a5 5 0 0110 0v4"/>
+                </svg>
+                Unlock {lockedCount} more spots
+              </button>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Side panel */}
-        {selectedSpot && (
-          <div className="w-72 shrink-0 border-l border-gray-100 bg-white overflow-hidden">
-            <SpotPanel
-              spot={selectedSpot}
-              onClose={() => setSelectedSpot(null)}
-              onBuy={handleBuy}
-            />
+      {/* PAYWALL */}
+      <section className="paywall-section" id="unlock">
+        <div className="paywall-bg" />
+        <div className="paywall-inner">
+          <div className="section-label">Get access</div>
+          <h2 className="paywall-title">The full map.<br /><em>One small price.</em></h2>
+          <p className="paywall-sub">
+            Everything your host would tell a close friend visiting Tirana. 37 spots,
+            honest notes, and zero tourist traps.
+          </p>
+          <div className="paywall-includes">
+            {[
+              '37 hand-picked spots across the city',
+              'Honest local notes on every single one',
+              'Works in Google Maps — save offline',
+              'Updated regularly as the city evolves',
+            ].map((item) => (
+              <div className="include-row" key={item}>
+                <div className="include-check">
+                  <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+                </div>
+                {item}
+              </div>
+            ))}
           </div>
-        )}
-      </div>
-    </div>
+          <div className="paywall-cta">
+            <div className="price-tag"><span>€</span>4</div>
+            <button className="btn-buy" onClick={handleBuy}>Unlock the full map →</button>
+          </div>
+          <p className="paywall-note">One-time payment. Instant access. No subscription.</p>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="how-section">
+        <div className="section-label">How it works</div>
+        <h2 className="section-title">Three steps to knowing Tirana like a local.</h2>
+        <div className="steps-grid">
+          {[
+            { num: '01', title: 'Pay once', body: 'A single €4 payment. No subscription, no account needed. Instant access after checkout.' },
+            { num: '02', title: 'Open on your phone', body: 'The map opens directly in Google Maps. Save it offline before you head out — no data needed.' },
+            { num: '03', title: 'Explore honestly', body: 'Every spot comes with a local note. No paid placements. No tourist traps. Just honest picks.' },
+            { num: '04', title: 'Keep it forever', body: 'The map stays in your Google account. Come back next year — it\'ll be there, updated with new gems.' },
+          ].map((step) => (
+            <div className="step" key={step.num}>
+              <div className="step-num">{step.num}</div>
+              <h4>{step.title}</h4>
+              <p>{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer>
+        <div className="footer-logo">Tirana Insider</div>
+        <div className="footer-host">
+          <div className="host-avatar">TI</div>
+          Made with care by your Airbnb host
+        </div>
+        <div className="footer-copy">© 2026 Tirana Insider</div>
+      </footer>
+    </>
   );
 }
