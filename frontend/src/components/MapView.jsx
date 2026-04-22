@@ -32,6 +32,7 @@ export default function MapView({ spots, activeFilter, selectedSpot, onSelectSpo
     <MapContainer
       center={TIRANA_CENTER}
       zoom={14}
+      minZoom={12}
       className="w-full h-full"
       zoomControl={false}
     >

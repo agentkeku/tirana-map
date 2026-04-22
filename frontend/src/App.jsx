@@ -70,7 +70,7 @@ export default function App() {
         </div>
         <button
           onClick={handleBuy}
-          className="px-4 py-2 rounded-full text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          className="px-4 py-2 rounded-full text-white text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
           style={{ backgroundColor: '#1A1410' }}
         >
           Unlock all — €4
@@ -106,15 +106,17 @@ export default function App() {
       </div>
 
       {/* Map + panel */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Map */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-h-0">
+          <div className="absolute inset-0">
           <MapView
             spots={spots}
             activeFilter={activeFilter}
             selectedSpot={selectedSpot}
             onSelectSpot={setSelectedSpot}
           />
+          </div>
 
           {/* Legend */}
           <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm z-[1000] text-xs text-gray-500 space-y-1">
